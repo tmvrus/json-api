@@ -9,7 +9,7 @@ import (
 	"github.com/tmvrus/json-api/internal/entities"
 )
 
-func TestStorage_Balance(t *testing.T) {
+func TestStorage_BalanceManagement(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
