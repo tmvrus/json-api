@@ -1,6 +1,12 @@
 # JSON API experimental implementation
 
 
+Test application
+```
+go test ./...
+```
+
+
 Run application
 ```
 go run cmd/server/main.go
