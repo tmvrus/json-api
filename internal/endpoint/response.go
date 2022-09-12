@@ -12,7 +12,7 @@ const supportedVersion = "2.0"
 type response struct {
 	Version string          `json:"jsonrpc"`
 	ID      int64           `json:"id"`
-	Result  json.RawMessage `json:"result,omitempty"`
+	Result  json.RawMessage `json:"result"`
 	Error   *apiError       `json:"error,omitempty"`
 }
 
