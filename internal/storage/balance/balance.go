@@ -73,28 +73,30 @@ func (s *Storage) RollbackTransaction(_ context.Context, txRef string) error {
 	return nil
 }
 
-func (s *Storage) WithdrawAndDeposit(_ context.Context, r entities.WithdrawAndDepositRequest) error {
+func (s *Storage) WithdrawAndDeposit(_ context.Context, r entities.WithdrawAndDepositRequest) (entities.WithdrawAndDepositResponse, error) {
 	s.txLock.Lock()
 	defer s.txLock.Unlock()
 	s.balanceLock.Lock()
 	defer s.balanceLock.Unlock()
 
+	var res entities.WithdrawAndDepositResponse
+
 	tx, ok := s.txLog[r.TxRef]
 	if ok {
 		switch tx.Status {
 		case txStatusRollback:
-			return fmt.Errorf("failed to process WithdrawAndDepositRequest: transaction %s was rolled back", r.TxRef)
+			return res, fmt.Errorf("failed to process WithdrawAndDepositRequest for tx %s: %w", r.TxRef, entities.ErrTxWasRolledBack)
 		case txStatusCommit:
-			return nil
+			return res, nil
 		default:
-			return fmt.Errorf("failed to process WithdrawAndDepositRequest: balanceData corruption detected, invalid tx status")
+			return res, fmt.Errorf("failed to process WithdrawAndDepositRequest: balanceData corruption detected, invalid tx status")
 		}
 	}
 
 	balanceRef := fmt.Sprintf("%s-%s", r.PlayerName, r.Currency)
 	originBalance := s.balanceData[balanceRef]
 	if r.Withdraw > originBalance {
-		return fmt.Errorf("failed to process WithdrawAndDepositRequest: current balance (%d) is less than withdraw (%d)", originBalance, r.Withdraw)
+		return res, fmt.Errorf("failed to process WithdrawAndDepositRequest: %w: (%d) is less than withdraw (%d)", entities.ErrBalanceNotEnough, originBalance, r.Withdraw)
 	}
 
 	tx = txInfo{
@@ -112,5 +114,9 @@ func (s *Storage) WithdrawAndDeposit(_ context.Context, r entities.WithdrawAndDe
 
 	s.balanceData[balanceRef] = newBalance
 	s.txLog[r.TxRef] = tx
-	return nil
+
+	res.NewBalance = newBalance
+	res.TxID = r.TxRef
+
+	return res, nil
 }
